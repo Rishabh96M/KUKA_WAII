@@ -1,15 +1,16 @@
-from sympy import cos, sin, Symbol, pprint
+from sympy import cos, sin
+
+import numpy as np
 import sympy as sp
+import matplotlib.pyplot as plt
 
 
 def calculate_tm(th_temp):
     # Initializing transformation vector with respect to 0th frame
     th0n_temp = [sp.Matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])]
-
     # Multiplying transformation matrices
     for i in range(0, 7):
         th0n_temp.append(th0n_temp[i] * th_temp[i])
-
     return th0n_temp
 
 
@@ -30,19 +31,63 @@ def calculate_jacobian(th0n_temp):
     return j_temp
 
 
+def plot_arm(th0n_temp):
+    plot_line(th0n_temp[0], th0n_temp[1])
+    plot_line(th0n_temp[1], th0n_temp[2])
+    plot_line(th0n_temp[2], th0n_temp[4])
+    plot_line(th0n_temp[4], th0n_temp[5])
+    plot_line(th0n_temp[5], th0n_temp[6])
+    plot_line(th0n_temp[6], th0n_temp[7])
+    plot_frame(th0n_temp[0])
+    plot_frame(th0n_temp[1])
+    plot_frame(th0n_temp[2])
+    plot_frame(th0n_temp[4])
+    plot_frame(th0n_temp[5])
+    plot_frame(th0n_temp[6])
+    plot_frame(th0n_temp[7])
+
+
+def plot_line(f1, f2):
+    ax.plot3D([f1[0, 3], f2[0, 3]], [f1[1, 3], f2[1, 3]], [f1[2, 3], f2[2, 3]], 'gray')
+
+
+def plot_frame(f):
+    rx = f[:, 0]
+    ry = f[:, 1]
+    rz = f[:, 2]
+    tx = f[0, 3]
+    ty = f[1, 3]
+    tz = f[2, 3]
+    ax.plot3D([tx, 3 * rx[0, 0] + tx], [ty, 3 * rx[1, 0] + ty], [tz, 3 * rx[2, 0] + tz], 'red')
+    ax.plot3D([tx, 3 * ry[0, 0] + tx], [ty, 3 * ry[1, 0] + ty], [tz, 3 * ry[2, 0] + tz], 'green')
+    ax.plot3D([tx, 3 * rz[0, 0] + tx], [ty, 3 * rz[1, 0] + ty], [tz, 3 * rz[2, 0] + tz], 'blue')
+
+
+def plot_circle(x_off, y_off, z_off, r, s):
+    th1 = np.linspace(0, 2 * 3.14, s)
+    x = []
+    z = []
+    for i in th1:
+        x.append(r * cos(i) + x_off)
+        z.append(r * sin(i) + z_off)
+    y = np.ones(s) * y_off
+    ax.plot3D(x, y, z, 'yo')
+
+
 if __name__ == '__main__':
     # initializing all variables as symbols
-    d1 = Symbol("d1", positive=True)
-    d3 = Symbol("d3", positive=True)
-    d5 = Symbol("d5", positive=True)
-    d7 = Symbol("d7", positive=True)
-    t1 = Symbol("t1", positive=True)
-    t2 = Symbol("t2", positive=True)
-    t3 = Symbol("t3", positive=True)
-    t4 = Symbol("t4", positive=True)
-    t5 = Symbol("t5", positive=True)
-    t6 = Symbol("t6", positive=True)
-    t7 = Symbol("t7", positive=True)
+    d1 = 400
+    d3 = 380
+    d5 = 400
+    d7 = 205
+
+    t1 = 1.5708
+    t2 = 0
+    t3 = 0
+    t4 = -1.5708
+    t5 = 0
+    t6 = 0
+    t7 = 0
 
     # model of the robot (transformation matrices)
     th = [sp.Matrix([[cos(t1), 0, -sin(t1), 0], [sin(t1), 0, cos(t1), 0], [0, -1, 0, d1], [0, 0, 0, 1]]),
@@ -56,18 +101,26 @@ if __name__ == '__main__':
     # calculating transformation matrices with respect to 0th frame
     th0n = calculate_tm(th)
 
-    print("The FK matrix is given by: ")
+    print("\n\nThe transformation matrices are: ")
     for x in th0n:
         print(x)
 
-    # calculating the jacobian matrix
-    j = calculate_jacobian(th0n)
+    # calculating the individual jacobian matrices
+    j_indv = calculate_jacobian(th0n)
 
-    print("The J matrix is given by: ")
-    for x in j:
-        print(x)
+    # Concatenating and printing J matrix
+    j = j_indv[0]
+    for i in range(1, 6):
+        j = j.row_join(j_indv[i])
+    print("\n\nThe J matrix is given by: ")
+    print(j)
 
-    # j_lol = j[0]
-    # for i in range(1, 6):
-    #     j_lol.row_join(j[i])
-    #     print(j_lol)
+    # Calculating Inverse J Matrix
+    print("\n\nThe J inv matrix is given by: ")
+    print(j.inv())
+
+    plt.figure()
+    ax = plt.axes(projection='3d')
+    plot_arm(th0n)
+    plot_circle(0, 605, 680, 100, 100)
+    plt.show()
