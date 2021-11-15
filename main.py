@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 # @param: A vector of joint angles (1 * 6)
 # @return: A vector of transformation matrices with respect to the 0th frame (7 * 4 * 4)
 def calculate_tm(a, d1, d3, d5, d7):
+    # Model of the robot
     th = [sp.Matrix([[cos(a[0]), 0, -sin(a[0]), 0], [sin(a[0]), 0, cos(a[0]), 0], [0, -1, 0, d1], [0, 0, 0, 1]]),
           sp.Matrix([[cos(a[1]), 0, sin(a[1]), 0], [sin(a[1]), 0, -cos(a[1]), 0], [0, 1, 0, 0], [0, 0, 0, 1]]),
           sp.Matrix([[cos(a[2]), 0, -sin(a[2]), 0], [0, 1, 0, 0], [sin(a[2]), 0, cos(a[2]), d3], [0, 0, 0, 1]]),
@@ -29,7 +30,7 @@ def calculate_tm(a, d1, d3, d5, d7):
     th0n_temp = [sp.Matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])]
 
     # Multiplying transformation matrices
-    for i in range(0, 6):
+    for i in range(0, len(th)):
         th0n_temp.append(th0n_temp[i] * th[i])
     return th0n_temp
 
@@ -41,14 +42,14 @@ def calculate_tm(a, d1, d3, d5, d7):
 def calculate_jacobian(th0n_temp):
     j_temp = []
     d06 = th0n_temp[-1].extract([0, 1, 2], [-1])                 # Extraxting the dn from Transformation Matrix
-    for i in range(0, 6):
+    for i in range(0, len(th0n_temp) - 1):
         ang_vel = th0n_temp[i].extract([0, 1, 2], [2])           # Extracting the Z component
         d0i = th0n_temp[i].extract([0, 1, 2], [-1])              # Extracting the di matrix
         lin_vel = ang_vel.cross(d06 - d0i)
         j0n = lin_vel.col_join(ang_vel)                          # Concatinating lin and ang velocity for a joint
         j_temp.append(j0n)
     j_1 = j_temp[0]                                              # Concatinating for J matrix
-    for x in range(1, 6):
+    for x in range(1, len(j_temp)):
         j_1 = j_1.row_join(j_temp[x])
     return j_1
 
@@ -141,6 +142,7 @@ if __name__ == '__main__':
 
     delta_time = 5 / len(x)         # Total time by number of points to cover
     print(delta_time)
+
     # Code to follow the trajectory
     for k in range(0, len(x)):
         curr_pos = tm0n[-1].extract([0, 1, 2], [-1])                              # The position of the end effector
