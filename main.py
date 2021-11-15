@@ -46,8 +46,6 @@ def calculate_jacobian(th0n_temp):
     d07 = th0n_temp[-1].extract([0, 1, 2], [-1])                # Extracting dn from T0n matrix
     for i in range(0, len(th0n_temp) - 1):
         if i == 2:                                              # Keeping the 3rd joint fixed
-            th0n_temp[i + 1] *= th0n_temp[i]
-            i += 1
             continue
         ang_vel = th0n_temp[i].extract([0, 1, 2], [2])          # Extracting Zi from T0i matrix
         d0i = th0n_temp[i].extract([0, 1, 2], [-1])             # Extracting di from T0i matrix
@@ -147,19 +145,24 @@ if __name__ == '__main__':
     ax.plot3D(x, y, z, 'yo')
 
     delta_time = 5 / len(x)         # Total time by number of points to cover
-
+    pprint(j)
     # Code to follow the trajectory
     for k in range(0, len(x)):
         curr_pos = tm0n[-1].extract([0, 1, 2], [-1])                              # The position of the end effector
         req_pos = sp.Matrix([[x[k]], [y[k]], [z[k]]])                             # The required position
         rate_pos = (req_pos - curr_pos) / delta_time                              # Rate of change in the position
         rate_angle = j.inv() * rate_pos.col_join(sp.Matrix([[0], [0], [0]]))      # Rate of change in angles
-        for m in range(0, 6):
-            ja[m] = ja[m] + (rate_angle[m] * delta_time)                          # Updating joint angles
+        for m in range(0, 6):                                                     # Updating joint angles
+            if m < 2:
+                ja[m] = ((ja[m] + (rate_angle[m] * delta_time)) % (2 * 3.14))
+            elif m == 2:
+                ja[m] = 0
+            else:
+                ja[m+1] = ((ja[m+1] + (rate_angle[m] * delta_time)) % (2*3.14))
         print(ja)
         tm0n = calculate_tm(ja, d1, d3, d5, d7)                                   # FK for new position of the arm
         j = calculate_jacobian(tm0n)                                              # Calculate the new jacobian
         plot_arm(tm0n)                                                            # Plot arm in 3D space
         plt.pause(delta_time)
 
-    plt.show()
+    # plt.show()
