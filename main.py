@@ -43,18 +43,18 @@ def calculate_tm(a, d1, d3, d5, d7):
 # @return: Jacbian matrices (6 * 6)
 def calculate_jacobian(th0n_temp):
     j_temp = []
-    d07 = th0n_temp[-1].extract([0, 1, 2], [-1])
+    d07 = th0n_temp[-1].extract([0, 1, 2], [-1])                # Extracting dn from T0n matrix
     for i in range(0, len(th0n_temp) - 1):
-        if i == 2:
+        if i == 2:                                              # Keeping the 3rd joint fixed
             th0n_temp[i + 1] *= th0n_temp[i]
             i += 1
             continue
-        ang_vel = th0n_temp[i].extract([0, 1, 2], [2])
-        d0i = th0n_temp[i].extract([0, 1, 2], [-1])
-        lin_vel = ang_vel.cross(d07 - d0i)
-        j0n = lin_vel.col_join(ang_vel)
+        ang_vel = th0n_temp[i].extract([0, 1, 2], [2])          # Extracting Zi from T0i matrix
+        d0i = th0n_temp[i].extract([0, 1, 2], [-1])             # Extracting di from T0i matrix
+        lin_vel = ang_vel.cross(d07 - d0i)                      # Computing linear velcity
+        j0n = lin_vel.col_join(ang_vel)                         # Concatinating linear and angular velocities
         j_temp.append(j0n)
-    j_1 = j_temp[0]                                              # Concatinating for J matrix
+    j_1 = j_temp[0]                                             # Concatinating for J matrix
     for x in range(1, len(j_temp)):
         j_1 = j_1.row_join(j_temp[x])
     return j_1
@@ -73,7 +73,6 @@ def plot_arm(th0n_temp):
     plot_frame(th0n_temp[0])
     plot_frame(th0n_temp[1])
     plot_frame(th0n_temp[2])
-    plot_frame(th0n_temp[3])
     plot_frame(th0n_temp[4])
     plot_frame(th0n_temp[5])
     plot_frame(th0n_temp[6])
