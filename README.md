@@ -23,6 +23,8 @@ python3 main.py
 ```
 
 ## To install the dependencies
+```
 sudo pip install matplotlib
 sudo pip install sympy
 sudo pip install numpy
+```
