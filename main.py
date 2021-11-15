@@ -34,7 +34,6 @@ def calculate_tm(a, d1, d3, d5, d7):
     # Multiplying transformation matrices
     for i in range(0, len(th)):
         th0n_temp.append(th0n_temp[i] * th[i])
-    print(th0n_temp)
     return th0n_temp
 
 
@@ -69,8 +68,8 @@ def plot_arm(th0n_temp):
     plot_line(th0n_temp[1], th0n_temp[2])
     plot_line(th0n_temp[2], th0n_temp[4])
     plot_line(th0n_temp[4], th0n_temp[5])
-    plot_line(th0n_temp[6], th0n_temp[6])
-    plot_line(th0n_temp[7], th0n_temp[7])
+    plot_line(th0n_temp[5], th0n_temp[6])
+    plot_line(th0n_temp[6], th0n_temp[7])
     plot_frame(th0n_temp[0])
     plot_frame(th0n_temp[1])
     plot_frame(th0n_temp[2])
@@ -127,7 +126,7 @@ if __name__ == '__main__':
     d7 = 205
 
     # Initial joint-angles of the arm
-    ja = [1.5708, 0, 0, -1.5708, 0, 0.00174533, 0]
+    ja = [1.5708, 0, 0, -1.5708, 0, 0, 0]
 
     # calculating transformation matrices with respect to 0th frame
     tm0n = calculate_tm(ja, d1, d3, d5, d7)
