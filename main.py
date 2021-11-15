@@ -15,16 +15,18 @@ import matplotlib.pyplot as plt
 
 # @brief: A function which will generate transformation matrices with respect to the 0th frame
 #
-# @param: A vector of joint angles (1 * 6)
-# @return: A vector of transformation matrices with respect to the 0th frame (7 * 4 * 4)
+# @param: a - A vector of joint angles (1 * 7)
+#         d1, d3, d5, d7 - Link lengths of the robot
+# @return: A vector of transformation matrices with respect to the 0th frame (8 * 4 * 4)
 def calculate_tm(a, d1, d3, d5, d7):
     # Model of the robot
     th = [sp.Matrix([[cos(a[0]), 0, -sin(a[0]), 0], [sin(a[0]), 0, cos(a[0]), 0], [0, -1, 0, d1], [0, 0, 0, 1]]),
           sp.Matrix([[cos(a[1]), 0, sin(a[1]), 0], [sin(a[1]), 0, -cos(a[1]), 0], [0, 1, 0, 0], [0, 0, 0, 1]]),
-          sp.Matrix([[cos(a[2]), 0, -sin(a[2]), 0], [0, 1, 0, 0], [sin(a[2]), 0, cos(a[2]), d3], [0, 0, 0, 1]]),
-          sp.Matrix([[cos(a[3]), 0, -sin(a[3]), 0], [sin(a[3]), 0, cos(a[3]), 0], [0, -1, 0, d5], [0, 0, 0, 1]]),
-          sp.Matrix([[cos(a[4]), 0, sin(a[4]), 0], [sin(a[4]), 0, -cos(a[4]), 0], [0, 1, 0, 0], [0, 0, 0, 1]]),
-          sp.Matrix([[cos(a[5]), -sin(a[5]), 0, 0], [sin(a[5]), cos(a[5]), 0, 0], [0, 1, 0, d7], [0, 0, 0, 1]])]
+          sp.Matrix([[cos(a[2]), 0, sin(a[2]), 0], [sin(a[2]), 0, -cos(a[2]), 0], [0, 1, 0, d3], [0, 0, 0, 1]]),
+          sp.Matrix([[cos(a[3]), 0, -sin(a[3]), 0], [sin(a[3]), 0, cos(a[3]), 0], [0, -1, 0, 0], [0, 0, 0, 1]]),
+          sp.Matrix([[cos(a[4]), 0, -sin(a[4]), 0], [sin(a[4]), 0, cos(a[4]), 0], [0, -1, 0, d5], [0, 0, 0, 1]]),
+          sp.Matrix([[cos(a[5]), 0, sin(a[5]), 0], [sin(a[5]), 0, -cos(a[5]), 0], [0, 1, 0, 0], [0, 0, 0, 1]]),
+          sp.Matrix([[cos(a[6]), -sin(a[6]), 0, 0], [sin(a[6]), cos(a[6]), 0, 0], [0, 1, 0, d7], [0, 0, 0, 1]])]
 
     # Initializing transformation vector with respect to 0th frame
     th0n_temp = [sp.Matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])]
@@ -32,21 +34,26 @@ def calculate_tm(a, d1, d3, d5, d7):
     # Multiplying transformation matrices
     for i in range(0, len(th)):
         th0n_temp.append(th0n_temp[i] * th[i])
+    print(th0n_temp)
     return th0n_temp
 
 
 # @brief: A function to calculate the jacobian matrix for each joint
 #
-# @param: A vector of transformation matrices with respect to the 0th frame (7 * 4 * 4)
+# @param: A vector of transformation matrices with respect to the 0th frame (8 * 4 * 4)
 # @return: Jacbian matrices (6 * 6)
 def calculate_jacobian(th0n_temp):
     j_temp = []
-    d06 = th0n_temp[-1].extract([0, 1, 2], [-1])                 # Extraxting the dn from Transformation Matrix
+    d07 = th0n_temp[-1].extract([0, 1, 2], [-1])
     for i in range(0, len(th0n_temp) - 1):
-        ang_vel = th0n_temp[i].extract([0, 1, 2], [2])           # Extracting the Z component
-        d0i = th0n_temp[i].extract([0, 1, 2], [-1])              # Extracting the di matrix
-        lin_vel = ang_vel.cross(d06 - d0i)
-        j0n = lin_vel.col_join(ang_vel)                          # Concatinating lin and ang velocity for a joint
+        if i == 2:
+            th0n_temp[i + 1] *= th0n_temp[i]
+            i += 1
+            continue
+        ang_vel = th0n_temp[i].extract([0, 1, 2], [2])
+        d0i = th0n_temp[i].extract([0, 1, 2], [-1])
+        lin_vel = ang_vel.cross(d07 - d0i)
+        j0n = lin_vel.col_join(ang_vel)
         j_temp.append(j0n)
     j_1 = j_temp[0]                                              # Concatinating for J matrix
     for x in range(1, len(j_temp)):
@@ -60,10 +67,10 @@ def calculate_jacobian(th0n_temp):
 def plot_arm(th0n_temp):
     plot_line(th0n_temp[0], th0n_temp[1])
     plot_line(th0n_temp[1], th0n_temp[2])
-    plot_line(th0n_temp[2], th0n_temp[3])
-    plot_line(th0n_temp[3], th0n_temp[4])
+    plot_line(th0n_temp[2], th0n_temp[4])
     plot_line(th0n_temp[4], th0n_temp[5])
-    plot_line(th0n_temp[5], th0n_temp[6])
+    plot_line(th0n_temp[6], th0n_temp[6])
+    plot_line(th0n_temp[7], th0n_temp[7])
     plot_frame(th0n_temp[0])
     plot_frame(th0n_temp[1])
     plot_frame(th0n_temp[2])
@@ -71,6 +78,7 @@ def plot_arm(th0n_temp):
     plot_frame(th0n_temp[4])
     plot_frame(th0n_temp[5])
     plot_frame(th0n_temp[6])
+    plot_frame(th0n_temp[7])
 
 
 # @brief: A function to plot a line in 3D space
@@ -106,7 +114,7 @@ def circle(x_off, y_off, z_off, r, s):
     z_val = []
     for i in th1:
         x_val.append(r * sin(i) + x_off)           # Vector of X Cordinates
-        z_val.append(r * cos(i) + z_off)           # Vector of Y Cordinates
+        z_val.append(r * cos(i) + z_off)           # Vector of Z Cordinates
     y_val = np.ones(s) * y_off
     return x_val, y_val, z_val
 
@@ -119,7 +127,7 @@ if __name__ == '__main__':
     d7 = 205
 
     # Initial joint-angles of the arm
-    ja = [1.5708, 0, -1.5708, 0, 0, 0]
+    ja = [1.5708, 0, 0, -1.5708, 0, 0.00174533, 0]
 
     # calculating transformation matrices with respect to 0th frame
     tm0n = calculate_tm(ja, d1, d3, d5, d7)
@@ -141,7 +149,6 @@ if __name__ == '__main__':
     ax.plot3D(x, y, z, 'yo')
 
     delta_time = 5 / len(x)         # Total time by number of points to cover
-    print(delta_time)
 
     # Code to follow the trajectory
     for k in range(0, len(x)):
