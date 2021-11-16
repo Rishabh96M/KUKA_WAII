@@ -10,6 +10,7 @@
 from sympy import cos, sin, pprint
 import numpy as np
 import sympy as sp
+import math
 import matplotlib.pyplot as plt
 
 
@@ -26,7 +27,7 @@ def calculate_tm(a, d1, d3, d5, d7):
           sp.Matrix([[cos(a[3]), 0, -sin(a[3]), 0], [sin(a[3]), 0, cos(a[3]), 0], [0, -1, 0, 0], [0, 0, 0, 1]]),
           sp.Matrix([[cos(a[4]), 0, -sin(a[4]), 0], [sin(a[4]), 0, cos(a[4]), 0], [0, -1, 0, d5], [0, 0, 0, 1]]),
           sp.Matrix([[cos(a[5]), 0, sin(a[5]), 0], [sin(a[5]), 0, -cos(a[5]), 0], [0, 1, 0, 0], [0, 0, 0, 1]]),
-          sp.Matrix([[cos(a[6]), -sin(a[6]), 0, 0], [sin(a[6]), cos(a[6]), 0, 0], [0, 1, 0, d7], [0, 0, 0, 1]])]
+          sp.Matrix([[cos(a[6]), -sin(a[6]), 0, 0], [sin(a[6]), cos(a[6]), 0, 0], [0, 0, 1, d7], [0, 0, 0, 1]])]
 
     # Initializing transformation vector with respect to 0th frame
     th0n_temp = [sp.Matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])]
@@ -105,7 +106,7 @@ def plot_frame(f):
 #         r - the raduis of the circle and
 #         s - the precision of the circle
 def circle(x_off, y_off, z_off, r, s):
-    th1 = np.linspace(0, 2 * 3.14, s)              # Equally spaced angles of a circle
+    th1 = np.linspace(2 * 3.14, 0, s)              # Equally spaced angles of a circle
     x_val = []
     z_val = []
     for i in th1:
@@ -124,6 +125,7 @@ if __name__ == '__main__':
 
     # Initial joint-angles of the arm
     ja = [1.5708, 0, 0, -1.5708, 0, 0, 0]
+    # ja = [0, -30*math.pi/180, 0, -45*math.pi/180, 0, 75*math.pi/180, 0]
 
     # calculating transformation matrices with respect to 0th frame
     tm0n = calculate_tm(ja, d1, d3, d5, d7)
@@ -158,11 +160,11 @@ if __name__ == '__main__':
             elif m == 2:
                 ja[m] = 0
             else:
-                ja[m+1] = ((ja[m+1] + (rate_angle[m] * delta_time)) % (2*3.14))
+                ja[m+1] = ((ja[m+1] + (rate_angle[m] * delta_time)) % (2 * 3.14))
         print(ja)
         tm0n = calculate_tm(ja, d1, d3, d5, d7)                                   # FK for new position of the arm
         j = calculate_jacobian(tm0n)                                              # Calculate the new jacobian
-        plot_arm(tm0n)                                                            # Plot arm in 3D space
+        ax.plot3D(curr_pos[0], curr_pos[1], curr_pos[2], 'ro')
         plt.pause(delta_time)
 
-    # plt.show()
+    plt.show()
