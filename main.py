@@ -45,8 +45,6 @@ def calculate_jacobian(th0n_temp):
     j_temp = []
     d07 = th0n_temp[-1].extract([0, 1, 2], [-1])                # Extracting dn from T0n matrix
     for i in range(0, len(th0n_temp) - 1):
-        if i == 2:                                              # Keeping the 3rd joint fixed
-            continue
         ang_vel = th0n_temp[i].extract([0, 1, 2], [2])          # Extracting Zi from T0i matrix
         d0i = th0n_temp[i].extract([0, 1, 2], [-1])             # Extracting di from T0i matrix
         lin_vel = ang_vel.cross(d07 - d0i)                      # Computing linear velcity
@@ -104,6 +102,7 @@ def plot_frame(f):
 # @param: x_off, y_off, z_off - are the center of the circle in 3D plane,
 #         r - the raduis of the circle and
 #         s - the precision of the circle
+# @return: x_val, y_val, z_val - Coordinates of the circle
 def circle(x_off, y_off, z_off, r, s):
     th1 = np.linspace(2 * 3.14, 0, s)              # Equally spaced angles of a circle
     x_val = []
@@ -124,14 +123,12 @@ if __name__ == '__main__':
 
     # Initial joint-angles of the arm
     ja = [1.5708, 0, 0, -1.5708, 0, 0, 0]
-    # ja = [0, -30*math.pi/180, 0, -45*math.pi/180, 0, 75*math.pi/180, 0]
 
     # calculating transformation matrices with respect to 0th frame
     tm0n = calculate_tm(ja, d1, d3, d5, d7)
 
     # calculating the jacobian matrix
     j = calculate_jacobian(tm0n)
-    pprint(j)
 
     # plotting the arm
     plt.figure()
@@ -139,31 +136,27 @@ if __name__ == '__main__':
     plot_arm(tm0n)
 
     # Getting the trajectory of the circle
-    # x, y, z = circle(120, 0, 1015, 100, 100)
     x, y, z = circle(0, 605, 680, 100, 100)
 
     # Plotting the circle
     ax.plot3D(x, y, z, 'yo')
 
-    delta_time = 5 / len(x)         # Total time by number of points to cover
+    delta_time = 5 / len(x)                                                 # Total time by number of points to cover
     pprint(j)
     # Code to follow the trajectory
     for k in range(0, len(x)):
         curr_pos = tm0n[-1].extract([0, 1, 2], [-1])                              # The position of the end effector
         req_pos = sp.Matrix([[x[k]], [y[k]], [z[k]]])                             # The required position
         rate_pos = (req_pos - curr_pos) / delta_time                              # Rate of change in the position
-        rate_angle = j.inv() * rate_pos.col_join(sp.Matrix([[0], [0], [0]]))      # Rate of change in angles
-        for m in range(0, 6):                                                     # Updating joint angles
-            if m < 2:
-                ja[m] = ((ja[m] + (rate_angle[m] * delta_time)) % (2 * 3.14))     # Updating joint angles
-            elif m == 2:                                                          # Bounding to 0 to 2*pi
-                ja[m] = 0
-            else:
-                ja[m+1] = ((ja[m+1] + (rate_angle[m] * delta_time)) % (2 * 3.14))
-        print(ja)
+
+        # Rate of change in angles, Calculating pseudo inverse
+        rate_angle = (j.T * ((j * j.T).inv())) * rate_pos.col_join(sp.Matrix([[0], [0], [0]]))
+        for m in range(0, 7):                                                     # Updating joint angles
+            ja[m] = ((ja[m] + (rate_angle[m] * delta_time)) % (2 * 3.14))         # Bounding to 0 to 2*pi
+        print(ja)                                                                 # Printing the joint angles
         tm0n = calculate_tm(ja, d1, d3, d5, d7)                                   # FK for new position of the arm
         j = calculate_jacobian(tm0n)                                              # Calculate the new jacobian
         ax.plot3D(curr_pos[0], curr_pos[1], curr_pos[2], 'ro')
-        plt.pause(0.1)
+        plt.pause(delta_time)
 
     plt.show()
