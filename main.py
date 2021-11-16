@@ -10,7 +10,6 @@
 from sympy import cos, sin, pprint
 import numpy as np
 import sympy as sp
-import math
 import matplotlib.pyplot as plt
 
 
@@ -54,8 +53,8 @@ def calculate_jacobian(th0n_temp):
         j0n = lin_vel.col_join(ang_vel)                         # Concatinating linear and angular velocities
         j_temp.append(j0n)
     j_1 = j_temp[0]                                             # Concatinating for J matrix
-    for x in range(1, len(j_temp)):
-        j_1 = j_1.row_join(j_temp[x])
+    for xi in range(1, len(j_temp)):
+        j_1 = j_1.row_join(j_temp[xi])
     return j_1
 
 
@@ -156,8 +155,8 @@ if __name__ == '__main__':
         rate_angle = j.inv() * rate_pos.col_join(sp.Matrix([[0], [0], [0]]))      # Rate of change in angles
         for m in range(0, 6):                                                     # Updating joint angles
             if m < 2:
-                ja[m] = ((ja[m] + (rate_angle[m] * delta_time)) % (2 * 3.14))
-            elif m == 2:
+                ja[m] = ((ja[m] + (rate_angle[m] * delta_time)) % (2 * 3.14))     # Updating joint angles
+            elif m == 2:                                                          # Bounding to 0 to 2*pi
                 ja[m] = 0
             else:
                 ja[m+1] = ((ja[m+1] + (rate_angle[m] * delta_time)) % (2 * 3.14))
@@ -165,6 +164,6 @@ if __name__ == '__main__':
         tm0n = calculate_tm(ja, d1, d3, d5, d7)                                   # FK for new position of the arm
         j = calculate_jacobian(tm0n)                                              # Calculate the new jacobian
         ax.plot3D(curr_pos[0], curr_pos[1], curr_pos[2], 'ro')
-        plt.pause(delta_time)
+        plt.pause(0.1)
 
     plt.show()
