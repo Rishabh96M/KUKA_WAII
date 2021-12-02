@@ -7,7 +7,7 @@
 
 
 # Importing all the required header files
-from sympy import cos, sin, pprint
+from sympy import cos, sin
 import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
@@ -116,17 +116,18 @@ def circle(x_off, y_off, z_off, r, s):
 
 # @brief: A function to calculate g(q) matrix
 #
-# @param: ja_temp - A vector of joint angles (1 * 7)
+# @param: ja_temp - A vector of current joint angles (1 * 7)
+#         old_t - A vector of previous joint angles (1 * 7)
 # @return: g(q) matrix (1 * 7)
-def calculate_g_q(tm0n_temp, ja_temp):
-    d = [0.036, 0.021, 0.021, 0.0201, 0.01985, 0.01055, 0.01]
-    m_i = [3.94781, 4.50275, 2.45520, 2.61155, 3.41, 3.38795, 0.35432]
-    g = 9.8
-    pe = 0
-    ja_prev = [1.5708, 0, 0, 4.7123, 0, 0, 0]
-    a = [ja_temp[1], ja_temp[1] + ja_temp[3], ja_temp[1] + ja_temp[3] + ja_temp[5]]
-    g_q_temp = sp.Matrix([[0], [0], [0], [0], [0], [0], [0]])
+def calculate_g_q(ja_temp, old_t):
+    d = [0.036, 0.021, 0.021, 0.0201, 0.01985, 0.01055, 0.01]                            # Link lenghts matrix in m
+    m_i = [3.94781, 4.50275, 2.45520, 2.61155, 3.41, 3.38795, 0.35432]                   # Masses of each link
+    g = 9.8                                                                              # Gravity in m/s^2
+    pe = 0                                                                               # Initializing Potential energy
+    a = [ja_temp[1], ja_temp[1] + ja_temp[3], ja_temp[1] + ja_temp[3] + ja_temp[5]]      # Grouping joint angles
+    g_q_temp = sp.Matrix([[0], [0], [0], [0], [0], [0], [0]])                            # Initialising g(q) matrix
 
+    # Height of centre of masses of each link
     h_i = [d[0]/2,
            d[0] + (d[1]*cos(a[0])/2),
            d[0] + d[1]*cos(a[0]) + (d[2]*cos(a[0])/2),
@@ -135,18 +136,18 @@ def calculate_g_q(tm0n_temp, ja_temp):
            d[0] + (d[1]+d[2])*cos(a[0]) + (d[3]+d[4])*cos(a[1]) + (d[5]*cos(a[2])/2),
            d[0] + (d[1]+d[2])*cos(a[0]) + (d[3]+d[4])*cos(a[1]) + d[5]*cos(a[2]) + (d[6]*cos(a[2])/2)]
 
-    for i in range(0, len(m_i) - 1):
+    # Calulating potential energy
+    for i in range(0, len(m_i)):
         pe += m_i[i] * g * h_i[i]
 
-    for i in range(0, len(ja_temp) - 1):
-        g_q_temp[i] = pe / (ja_temp[i] - ja_prev[i])
-
-    ja_prev = ja_temp
+    # Computing g(q) matrix
+    for i in range(0, len(ja_temp)):
+        g_q_temp[i] = pe / ((ja_temp[i] - old_t[i])*(180/np.pi))
     return g_q_temp
 
 
 if __name__ == '__main__':
-    # initializing all the link lengths
+    # initializing all the link lengths in mm
     d1 = 360
     d3 = 420
     d5 = 399.5
@@ -154,8 +155,13 @@ if __name__ == '__main__':
 
     # Initial joint-angles of the arm
     ja = [1.5708, 0, 0, 4.7123, 0, 0, 0]
+
+    # initializing torque vector
     tor = []
-    F = sp.Matrix([[0], [-5], [0], [0], [0], [0]])
+
+    # initializing previous angles
+    ja_prev = [0, 0, 0, 0, 0, 0, 0]
+    F = sp.Matrix([[0], [5], [0], [0], [0], [0]])
 
     # calculating transformation matrices with respect to 0th frame
     tm0n = calculate_tm(ja, d1, d3, d5, d7)
@@ -164,12 +170,12 @@ if __name__ == '__main__':
     j = calculate_jacobian(tm0n)
 
     # plotting the arm
-    plt.figure(0)
+    plt.figure()
     ax = plt.axes(projection='3d')
     plot_arm(tm0n)
 
     # Getting the trajectory of the circle
-    x, y, z = circle(0, 605, 680, 100, 100)
+    x, y, z = circle(0, 605, 680, 100, 200)
 
     # Plotting the circle
     ax.plot3D(x, y, z, 'yo')
@@ -185,14 +191,17 @@ if __name__ == '__main__':
         rate_angle = (j.T * ((j * j.T).inv())) * rate_pos.col_join(sp.Matrix([[0], [0], [0]]))
         print(ja)                                                                 # Printing the joint angles
         for m in range(0, 7):                                                     # Updating joint angles
+            ja_prev[m] = ja[m]                                                    # Updating previous angles
             ja[m] = ((ja[m] + (rate_angle[m] * delta_time)) % (2 * 3.14))         # Bounding to 0 to 2*pi
+
         tm0n = calculate_tm(ja, d1, d3, d5, d7)                                   # FK for new position of the arm
         j = calculate_jacobian(tm0n)                                              # Calculate the new jacobian
-        g_q = calculate_g_q(tm0n,ja)
-        tor.append(g_q - (j.T * F))
+        g_q = calculate_g_q(ja, ja_prev)                                          # Calculating g(q) matrix
+        tor.append(g_q - (j.T * F))                                               # Calculating the torque at each joint
         ax.plot3D(curr_pos[0], curr_pos[1], curr_pos[2], 'ro')
-        plt.pause(delta_time/100)
+        plt.pause(delta_time/200)
 
+    # Plotting the torque graphs
     tor_1 = []
     tor_2 = []
     tor_3 = []
@@ -201,7 +210,7 @@ if __name__ == '__main__':
     tor_6 = []
     tor_7 = []
     for m in range(0, len(tor)):
-        tor_1.append(tor[m].extract([0],[0]))
+        tor_1.append(tor[m].extract([0], [0]))
         tor_2.append(tor[m].extract([1], [0]))
         tor_3.append(tor[m].extract([2], [0]))
         tor_4.append(tor[m].extract([3], [0]))
@@ -210,20 +219,19 @@ if __name__ == '__main__':
         tor_7.append(tor[m].extract([6], [0]))
 
     plt.clf()
-    fig, axis = plt.subplots(2, 4)
-    axis[0, 0].plot(np.linspace(1, 200, 100), tor_1)
+    _, axis = plt.subplots(2, 4)
+    axis[0, 0].plot(np.linspace(0, 200, len(tor_1)), tor_1)
     axis[0, 0].set_title("Torque of Joint 1")
-    axis[0, 1].plot(np.linspace(1, 200, 100), tor_2)
+    axis[0, 1].plot(np.linspace(0, 200, len(tor_1)), tor_2)
     axis[0, 1].set_title("Torque of Joint 2")
-    axis[0, 2].plot(np.linspace(1, 200, 100), tor_3)
+    axis[0, 2].plot(np.linspace(0, 200, len(tor_1)), tor_3)
     axis[0, 2].set_title("Torque of Joint 3")
-    axis[0, 3].plot(np.linspace(1, 200, 100), tor_4)
+    axis[0, 3].plot(np.linspace(0, 200, len(tor_1)), tor_4)
     axis[0, 3].set_title("Torque of Joint 4")
-    axis[1, 0].plot(np.linspace(1, 200, 100), tor_5)
+    axis[1, 0].plot(np.linspace(0, 200, len(tor_1)), tor_5)
     axis[1, 0].set_title("Torque of Joint 5")
-    axis[1, 1].plot(np.linspace(1, 200, 100), tor_6)
+    axis[1, 1].plot(np.linspace(0, 200, len(tor_1)), tor_6)
     axis[1, 1].set_title("Torque of Joint 6")
-    axis[1, 2].plot(np.linspace(1, 200, 100), tor_7)
+    axis[1, 2].plot(np.linspace(0, 200, len(tor_1)), tor_7)
     axis[1, 2].set_title("Torque of Joint 7")
     plt.show()
-
