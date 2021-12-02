@@ -135,6 +135,9 @@ def calculate_g_q(tm0n_temp, ja_temp):
            d[0] + (d[1]+d[2])*cos(a[0]) + (d[3]+d[4])*cos(a[1]) + (d[5]*cos(a[2])/2),
            d[0] + (d[1]+d[2])*cos(a[0]) + (d[3]+d[4])*cos(a[1]) + d[5]*cos(a[2]) + (d[6]*cos(a[2])/2)]
 
+    for i in range(0, len(m_i) - 1):
+        pe += m_i[i] * g * h_i[i]
+
     for i in range(0, len(ja_temp) - 1):
         g_q_temp[i] = pe / (ja_temp[i] - ja_prev[i])
 
