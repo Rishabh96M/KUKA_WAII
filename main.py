@@ -118,7 +118,7 @@ def circle(x_off, y_off, z_off, r, s):
 #
 # @param: ja_temp - A vector of joint angles (1 * 7)
 # @return: g(q) matrix (1 * 7)
-def calculate_g_q(ja_temp):
+def calculate_g_q(tm0n_temp, ja_temp):
     d = [0.036, 0.021, 0.021, 0.0201, 0.01985, 0.01055, 0.01]
     m_i = [3.94781, 4.50275, 2.45520, 2.61155, 3.41, 3.38795, 0.35432]
     g = 9.8
@@ -134,9 +134,6 @@ def calculate_g_q(ja_temp):
            d[0] + (d[1]+d[2])*cos(a[0]) + d[3]*cos(a[1]) + (d[4]*cos(a[1])/2),
            d[0] + (d[1]+d[2])*cos(a[0]) + (d[3]+d[4])*cos(a[1]) + (d[5]*cos(a[2])/2),
            d[0] + (d[1]+d[2])*cos(a[0]) + (d[3]+d[4])*cos(a[1]) + d[5]*cos(a[2]) + (d[6]*cos(a[2])/2)]
-
-    for i in range(0, len(m_i) - 1):
-        pe += m_i[i] * g * h_i[i]
 
     for i in range(0, len(ja_temp) - 1):
         g_q_temp[i] = pe / (ja_temp[i] - ja_prev[i])
@@ -188,7 +185,7 @@ if __name__ == '__main__':
             ja[m] = ((ja[m] + (rate_angle[m] * delta_time)) % (2 * 3.14))         # Bounding to 0 to 2*pi
         tm0n = calculate_tm(ja, d1, d3, d5, d7)                                   # FK for new position of the arm
         j = calculate_jacobian(tm0n)                                              # Calculate the new jacobian
-        g_q = calculate_g_q(ja)
+        g_q = calculate_g_q(tm0n,ja)
         tor.append(g_q - (j.T * F))
         ax.plot3D(curr_pos[0], curr_pos[1], curr_pos[2], 'ro')
         plt.pause(delta_time/100)
