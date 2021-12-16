@@ -11,15 +11,15 @@ import sympy as sp
 import matplotlib.pyplot as plt
 
 #Defining the lengths s (distance between origins in z direction)
-d = [0, 0, 268.71, 0, 403.08, 0, 0]
+d = [0, 0, 0]
 
 #Defining the alphas
-alpha = [4.7123, 4.7123, 1.5708, 4.7123, 1.5708, 4.7123, 0]
+alpha = [4.7123, 0, 0]
 
 #Defining the lengths a (distance between origins in x direction)
-a = [268.71, 0, 0, 0, 0, 0, 0]
+a = [10, 10, 10]
 
-th = [0, -1.5708, 0, 0, 0, 0, 0]
+th = [0, 0, 0]
 
 def create_translation_matrices(theta):
     trasformation_matrices = []
@@ -76,17 +76,11 @@ def calculate_jacobian(th0n_temp):
 def plot_arm(th0n_temp):
     plot_line(th0n_temp[0], th0n_temp[1])
     plot_line(th0n_temp[1], th0n_temp[2])
-    plot_line(th0n_temp[2], th0n_temp[4])
-    plot_line(th0n_temp[4], th0n_temp[5])
-    plot_line(th0n_temp[5], th0n_temp[6])
-    plot_line(th0n_temp[6], th0n_temp[7])
+    plot_line(th0n_temp[2], th0n_temp[3])
     plot_frame(th0n_temp[0])
     plot_frame(th0n_temp[1])
     plot_frame(th0n_temp[2])
-    plot_frame(th0n_temp[4])
-    plot_frame(th0n_temp[5])
-    plot_frame(th0n_temp[6])
-    plot_frame(th0n_temp[7])
+    plot_frame(th0n_temp[3])
 
 
 # @brief: A function to plot a line in 3D space
@@ -199,7 +193,7 @@ if __name__ == '__main__':
             ja_prev[m] = ja[m]                                                    # Updating previous angles
             ja[m] = ((ja[m] + (rate_angle[m] * delta_time)) % (2 * 3.14))         # Bounding to 0 to 2*pi
 
-        tm0n = calculate_tm(ja, d1, d3, d5, d7)                                   # FK for new position of the arm
+        tm0n = calculate_tm(ja, d)                                   # FK for new position of the arm
         j = calculate_jacobian(tm0n)                                              # Calculate the new jacobian
         ax.plot3D(curr_pos[0], curr_pos[1], curr_pos[2], 'ro')
         plt.pause(delta_time)
