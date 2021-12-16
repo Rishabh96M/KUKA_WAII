@@ -1,16 +1,34 @@
-# KUKA WAII Robot Model
-# Copyright (c) 2021 Rishabh Mukund
-# MIT License
+# Group 41 Final Project
+# Copyright (c) 2021 Rishabh Mukund, Koundinya Vinnakota
 #
-# Description: This code will generate the Forward and Inverse Kinematics for position and velocity and follow a
-# given trajectory.
+# Description: To simulate and test inverse and forward kinematics on Fetch and Freight Robot
 
 
 # Importing all the required header files
-from sympy import cos, sin
+from sympy import cos, sin, pprint
 import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
+
+#Defining the lengths s (distance between origins in z direction)
+d = [0, 0, 268.71, 0, 403.08, 0, 0]
+
+#Defining the alphas
+alpha = [4.7123, 4.7123, 1.5708, 4.7123, 1.5708, 4.7123, 0]
+
+#Defining the lengths a (distance between origins in x direction)
+a = [268.71, 0, 0, 0, 0, 0, 0]
+
+th = [0, -1.5708, 0, 0, 0, 0, 0]
+
+def create_translation_matrices(theta):
+    trasformation_matrices = []
+    for i in range(0, len(d)):
+        trasformation_matrices.append(sp.Matrix([[cos(theta[i] + th[i]), -sin(theta[i] + th[i])*cos(alpha[i] + th[i]), sin(theta[i] + th[i])*sin(alpha[i] + th[i]), a[i]*cos(theta[i] + th[i])],
+                                        [sin(theta[i] + th[i]), cos(theta[i] + th[i])*cos(alpha[i] + th[i]), -cos(theta[i] + th[i])*sin(alpha[i] + th[i]), a[i]*sin(theta[i] + th[i])],
+                                        [0, sin(alpha[i] + th[i]), cos(alpha[i] + th[i]), d[i]],
+                                        [0, 0, 0, 1]]))
+    return trasformation_matrices
 
 
 # @brief: A function which will generate transformation matrices with respect to the 0th frame
@@ -18,22 +36,15 @@ import matplotlib.pyplot as plt
 # @param: a - A vector of joint angles (1 * 7)
 #         d1, d3, d5, d7 - Link lengths of the robot
 # @return: A vector of transformation matrices with respect to the 0th frame (8 * 4 * 4)
-def calculate_tm(a, d1_temp, d3_temp, d5_temp, d7_temp):
-    # Model of the robot
-    th = [sp.Matrix([[cos(a[0]), 0, -sin(a[0]), 0], [sin(a[0]), 0, cos(a[0]), 0], [0, -1, 0, d1_temp], [0, 0, 0, 1]]),
-          sp.Matrix([[cos(a[1]), 0, sin(a[1]), 0], [sin(a[1]), 0, -cos(a[1]), 0], [0, 1, 0, 0], [0, 0, 0, 1]]),
-          sp.Matrix([[cos(a[2]), 0, sin(a[2]), 0], [sin(a[2]), 0, -cos(a[2]), 0], [0, 1, 0, d3_temp], [0, 0, 0, 1]]),
-          sp.Matrix([[cos(a[3]), 0, -sin(a[3]), 0], [sin(a[3]), 0, cos(a[3]), 0], [0, -1, 0, 0], [0, 0, 0, 1]]),
-          sp.Matrix([[cos(a[4]), 0, -sin(a[4]), 0], [sin(a[4]), 0, cos(a[4]), 0], [0, -1, 0, d5_temp], [0, 0, 0, 1]]),
-          sp.Matrix([[cos(a[5]), 0, sin(a[5]), 0], [sin(a[5]), 0, -cos(a[5]), 0], [0, 1, 0, 0], [0, 0, 0, 1]]),
-          sp.Matrix([[cos(a[6]), -sin(a[6]), 0, 0], [sin(a[6]), cos(a[6]), 0, 0], [0, 0, 1, d7_temp], [0, 0, 0, 1]])]
-
+def calculate_tm(th):
     # Initializing transformation vector with respect to 0th frame
     th0n_temp = [sp.Matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])]
 
     # Multiplying transformation matrices
     for i in range(0, len(th)):
         th0n_temp.append(th0n_temp[i] * th[i])
+    print("\n\n")
+    pprint(th0n_temp[-1])
     return th0n_temp
 
 
@@ -53,6 +64,9 @@ def calculate_jacobian(th0n_temp):
     j_1 = j_temp[0]                                             # Concatinating for J matrix
     for xi in range(1, len(j_temp)):
         j_1 = j_1.row_join(j_temp[xi])
+    print("\n\n")
+    pprint(j_1)
+    print("\n\n")
     return j_1
 
 
@@ -147,24 +161,14 @@ def calculate_g_q(ja_temp, old_t):
 
 
 if __name__ == '__main__':
-    # initializing all the link lengths in mm
-    d1 = 360
-    d3 = 420
-    d5 = 399.5
-    d7 = 205.5
 
     # Initial joint-angles of the arm
-    ja = [1.5708, 0, 0, 4.7123, 0, 0, 0]
+    ja = [0, 0, 0, 0, 0, 0, 0]
 
-    # initializing torque vector
-    tor = []
-
-    # initializing previous angles
-    ja_prev = [0, 0, 0, 0, 0, 0, 0]
-    F = sp.Matrix([[0], [5], [0], [0], [0], [0]])
 
     # calculating transformation matrices with respect to 0th frame
-    tm0n = calculate_tm(ja, d1, d3, d5, d7)
+    translation = create_translation_matrices(ja)
+    tm0n = calculate_tm(translation)
 
     # calculating the jacobian matrix
     j = calculate_jacobian(tm0n)
@@ -175,14 +179,15 @@ if __name__ == '__main__':
     plot_arm(tm0n)
 
     # Getting the trajectory of the circle
-    x, y, z = circle(0, 605, 680, 100, 200)
+    x, y, z = circle(0, 605, 680, 100, 100)
 
     # Plotting the circle
     ax.plot3D(x, y, z, 'yo')
+    plt.show()
 
-    delta_time = 200 / len(x)                                                 # Total time by number of points to cover
+    delta_time = 5 / len(x)                                                       # Total time by number of points to cover
     # Code to follow the trajectory
-    for k in range(0, len(x)):
+    for k in range(0, 1):
         curr_pos = tm0n[-1].extract([0, 1, 2], [-1])                              # The position of the end effector
         req_pos = sp.Matrix([[x[k]], [y[k]], [z[k]]])                             # The required position
         rate_pos = (req_pos - curr_pos) / delta_time                              # Rate of change in the position
@@ -196,42 +201,6 @@ if __name__ == '__main__':
 
         tm0n = calculate_tm(ja, d1, d3, d5, d7)                                   # FK for new position of the arm
         j = calculate_jacobian(tm0n)                                              # Calculate the new jacobian
-        g_q = calculate_g_q(ja, ja_prev)                                          # Calculating g(q) matrix
-        tor.append(g_q - (j.T * F))                                               # Calculating the torque at each joint
         ax.plot3D(curr_pos[0], curr_pos[1], curr_pos[2], 'ro')
-        plt.pause(delta_time/200)
-
-    # Plotting the torque graphs
-    tor_1 = []
-    tor_2 = []
-    tor_3 = []
-    tor_4 = []
-    tor_5 = []
-    tor_6 = []
-    tor_7 = []
-    for m in range(0, len(tor)):
-        tor_1.append(tor[m].extract([0], [0]))
-        tor_2.append(tor[m].extract([1], [0]))
-        tor_3.append(tor[m].extract([2], [0]))
-        tor_4.append(tor[m].extract([3], [0]))
-        tor_5.append(tor[m].extract([4], [0]))
-        tor_6.append(tor[m].extract([5], [0]))
-        tor_7.append(tor[m].extract([6], [0]))
-
-    plt.clf()
-    _, axis = plt.subplots(2, 4)
-    axis[0, 0].plot(np.linspace(0, 200, len(tor_1)), tor_1)
-    axis[0, 0].set_title("Torque of Joint 1")
-    axis[0, 1].plot(np.linspace(0, 200, len(tor_1)), tor_2)
-    axis[0, 1].set_title("Torque of Joint 2")
-    axis[0, 2].plot(np.linspace(0, 200, len(tor_1)), tor_3)
-    axis[0, 2].set_title("Torque of Joint 3")
-    axis[0, 3].plot(np.linspace(0, 200, len(tor_1)), tor_4)
-    axis[0, 3].set_title("Torque of Joint 4")
-    axis[1, 0].plot(np.linspace(0, 200, len(tor_1)), tor_5)
-    axis[1, 0].set_title("Torque of Joint 5")
-    axis[1, 1].plot(np.linspace(0, 200, len(tor_1)), tor_6)
-    axis[1, 1].set_title("Torque of Joint 6")
-    axis[1, 2].plot(np.linspace(0, 200, len(tor_1)), tor_7)
-    axis[1, 2].set_title("Torque of Joint 7")
+        plt.pause(delta_time)
     plt.show()
