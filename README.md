@@ -1,8 +1,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 
-# KUKA_WAII
-Calculating Forward and Inverse Kinematics for KUKA WAII Robot (7 DoF) and making the end effector move as a circle and plotting the movement.
+# Kinematic Modeling and Torque Analysis of a KUKA 7 DoF Robotic Arm
+Modeling a KUKA 7 DoF robotic arm and analyzing its torque requirements while tracing a given path with a specified velocity profile. The kinematic model was established using DH parameters, enabling the arm to accurately follow the desired path. Torque analysis was conducted to determine the torque graphs for each joint over time, providing insights into the arm's performance and power requirements. The results contribute to optimizing the arm's design and ensuring safe and efficient operation during velocity-controlled path tracing tasks.
 
 Verified on python 3.8.10 and packages used are SymPy, NumPy, Matplotlib
 
